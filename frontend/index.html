@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Student Skills intelligence dashboard">
+  <title>SkillQuery | Student Insights</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/frontend/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">S</span><span>Skill<span class="brand-accent">Query</span></span></div>
+      <div class="sidebar-copy">
+        <p class="eyebrow">AI-powered insights</p>
+        <h1>Ask your student data.</h1>
+        <p>Get clear answers from your cleared-course records in seconds.</p>
+      </div>
+      <div class="sidebar-footer"><span class="status-dot"></span> Database connected</div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div><p class="eyebrow">Workspace / Query assistant</p><h2>Student insights</h2></div>
+        <div class="secure-badge"><span>✦</span> Read-only analysis</div>
+      </header>
+      <section class="content">
+        <div class="hero-card">
+          <div class="hero-icon">⌁</div>
+          <div><p class="eyebrow">Natural language search</p><h3>What would you like to know?</h3><p class="muted">Ask about cleared students, courses, levels, or results.</p></div>
+        </div>
+        <section id="answer-section" class="answer-section hidden">
+          <div class="section-heading"><span>Conversation</span><span class="line"></span><button id="clear-btn">Clear</button></div>
+          <div id="chat" class="chat"></div>
+        </section>
+        <div class="query-panel">
+          <form id="query-form">
+            <label for="question">Your question</label>
+            <div class="input-wrap">
+              <textarea id="question" rows="2" placeholder="e.g. How many students cleared Data Structures?" maxlength="1000" required></textarea>
+              <button id="submit-btn" type="submit"><span>Ask SkillQuery</span><span class="arrow">→</span></button>
+            </div>
+            <div class="form-meta"><span>Press <kbd>Enter</kbd> to ask · <kbd>Shift + Enter</kbd> for a new line</span><span id="char-count">0 / 1000</span></div>
+          </form>
+        </div>
+        <div class="suggestions">
+          <div class="section-heading"><span>Try asking</span><span class="line"></span></div>
+          <div class="suggestion-grid">
+            <button class="suggestion" data-question="How many distinct students have cleared Programming Java?"><span class="suggestion-icon purple">◈</span><span><strong>Course performance</strong><small>Count cleared Java students</small></span><b>↗</b></button>
+            <button class="suggestion" data-question="Top 10 students with the most cleared Java-related courses"><span class="suggestion-icon blue">⌁</span><span><strong>Top performers</strong><small>Find students leading in courses</small></span><b>↗</b></button>
+            <button class="suggestion" data-question="Show cleared versus not-cleared counts for Data Structures"><span class="suggestion-icon orange">◒</span><span><strong>Result breakdown</strong><small>Compare cleared and pending results</small></span><b>↗</b></button>
+          </div>
+        </div>
+      </section>
+      <footer><span>SkillQuery · Student Skills Intelligence</span><span>Powered by secure read-only queries</span></footer>
+    </main>
+  </div>
+  <script src="/frontend/app.js"></script>
+</body>
+</html>

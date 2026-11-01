@@ -96,7 +96,10 @@ WhatsApp Cloud API is not the same as automating WhatsApp Web. Meta may require 
 ```powershell
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
-Open `http://127.0.0.1:8000/` to check health. For webhook testing, expose port 8000 through an HTTPS tunnel and configure that URL in Meta.
+Open `http://127.0.0.1:8000/` to use the web dashboard. It sends questions to
+the same read-only query pipeline as WhatsApp. The health endpoint is
+`http://127.0.0.1:8000/health`. For webhook testing, expose port 8000 through
+an HTTPS tunnel and configure that URL in Meta.
 
 ## 8. Example questions
 - `How many distinct students have cleared Programming Java?`

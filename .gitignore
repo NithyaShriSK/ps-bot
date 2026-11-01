@@ -1,6 +1,6 @@
 .env
 .ps/
-ps/
 __pycache__/
 *.pyc
 .venv/
+ps/

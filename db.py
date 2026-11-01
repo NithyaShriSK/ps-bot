@@ -1,6 +1,7 @@
 import os
 import psycopg
 from dotenv import load_dotenv
+
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -18,7 +19,8 @@ def fetch_rows(sql: str, params=()):
             if params:
                 cur.execute(sql, params)
             else:
-                cur.execute(sql)
+                # Escape % to %% so psycopg3 does not treat literal ILIKE '%' as parameter placeholders
+                cur.execute(sql.replace("%", "%%"))
             cols = [d.name for d in cur.description] if cur.description else []
             rows = cur.fetchall() if cur.description else []
     return cols, rows
