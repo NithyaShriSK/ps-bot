@@ -30,15 +30,29 @@ function addMessage(role, text, options = [], tableData = null) {
     label.textContent = "SkillQuery assistant";
     const content = document.createElement("div");
     content.className = "answer";
-    const hasStudentTable = tableData && tableData.rows && tableData.rows.length
-      && tableData.columns && tableData.columns.includes("name");
-    if (!hasStudentTable) {
-      renderAnswer(content, text, options.length > 0);
-      body.append(label, content);
+
+    // Always render textual summary and explanations
+    renderAnswer(content, text, options.length > 0);
+    body.append(label, content);
+
+    // If metadata contains included courses description, render explanation note
+    if (tableData && tableData.meta && tableData.meta.description) {
+      const note = document.createElement("div");
+      note.className = "taxonomy-note";
+      note.style.fontSize = "0.82rem";
+      note.style.color = "var(--text-muted, #8e8ea0)";
+      note.style.margin = "6px 0 10px 0";
+      note.innerHTML = `<strong>Domain Scope:</strong> ${tableData.meta.description}`;
+      body.appendChild(note);
     }
+
+    const hasStudentTable = tableData && tableData.rows && tableData.rows.length
+      && tableData.columns && tableData.columns.some(c => ["name", "roll_number", "student_count"].includes(c));
+
     if (hasStudentTable) {
       body.appendChild(createTable(tableData.columns, tableData.rows));
     }
+
     if (options.length) {
       const optionList = document.createElement("div");
       optionList.className = "option-list";
@@ -81,18 +95,53 @@ function createTable(columns, rows) {
   const table = document.createElement("table");
   const head = document.createElement("thead");
   const headerRow = document.createElement("tr");
+
+  // Add Rank column if multiple rows
+  const addRank = rows.length > 1;
+  if (addRank) {
+    const rankHeader = document.createElement("th");
+    rankHeader.textContent = "#";
+    headerRow.appendChild(rankHeader);
+  }
+
   columns.forEach((column) => {
     const cell = document.createElement("th");
-    cell.textContent = column.replaceAll("_", " ");
+    if (column === "cleared_courses") {
+      cell.textContent = "Courses / Levels Cleared";
+    } else if (column === "attempted_courses") {
+      cell.textContent = "Attempted Courses";
+    } else if (column === "completed_levels") {
+      cell.textContent = "Completed Levels";
+    } else {
+      cell.textContent = column.replaceAll("_", " ");
+    }
     headerRow.appendChild(cell);
   });
   head.appendChild(headerRow);
   const body = document.createElement("tbody");
-  rows.forEach((row) => {
+  rows.forEach((row, idx) => {
     const tableRow = document.createElement("tr");
+    if (addRank) {
+      const rankCell = document.createElement("td");
+      rankCell.textContent = String(idx + 1);
+      rankCell.style.fontWeight = "600";
+      rankCell.style.color = "var(--text-muted, #8e8ea0)";
+      tableRow.appendChild(rankCell);
+    }
     columns.forEach((column) => {
       const cell = document.createElement("td");
-      cell.textContent = row[column] ?? "";
+      const val = row[column] ?? "";
+      if ((column === "cleared_courses" || column === "attempted_courses") && val) {
+        const wrap = document.createElement("div");
+        wrap.className = "courses-cell";
+        const courses = String(val).split(", ");
+        wrap.innerHTML = courses
+          .map(c => `<span class="course-pill">${c}</span>`)
+          .join("");
+        cell.appendChild(wrap);
+      } else {
+        cell.textContent = val;
+      }
       tableRow.appendChild(cell);
     });
     body.appendChild(tableRow);
@@ -132,16 +181,15 @@ function renderAnswer(element, text, hasOptions) {
   const optionLine = /^\s*\*?\d+\*?\s*[-.)]\s*.+$/;
   const lines = text.split("\n").filter((line) => !hasOptions || !optionLine.test(line));
   const cleaned = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
-  parts.forEach((part) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      const strong = document.createElement("strong");
-      strong.textContent = part.slice(2, -2);
-      element.appendChild(strong);
-    } else {
-      element.appendChild(document.createTextNode(part));
-    }
-  });
+
+  // Parse markdown bold and italic formatting
+  const p = document.createElement("div");
+  const formatted = cleaned
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+  p.innerHTML = formatted;
+  element.appendChild(p);
 }
 
 function extractOptions(text) {
@@ -182,7 +230,7 @@ form.addEventListener("submit", async (event) => {
   answerSection.classList.remove("hidden");
   const loading = document.createElement("div");
   loading.className = "chat-message assistant loading";
-  loading.textContent = "Searching your student records…";
+  loading.textContent = "Searching verified student records…";
   chat.appendChild(loading);
   try {
     const response = await fetch("/api/query", {
@@ -205,8 +253,17 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-clearButton.addEventListener("click", () => {
+clearButton.addEventListener("click", async () => {
   chat.innerHTML = "";
   content.classList.remove("has-chat");
   answerSection.classList.add("hidden");
+  try {
+    await fetch("/api/reset", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({session_id: sessionId})
+    });
+  } catch (e) {
+    console.warn("Failed to reset session on server:", e);
+  }
 });

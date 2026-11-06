@@ -1,122 +1,113 @@
-# Student Skills WhatsApp Query Bot (PostgreSQL + pgvector + Groq)
+# SkillQuery: Student Skills Intelligence Assistant
 
-This starter imports the supplied MySQL-style `ps_cleared_course_view` dump into PostgreSQL, answers natural-language questions with Groq-generated **read-only SQL**, and sends replies through the official WhatsApp Cloud API.
+Natural-language semantic querying and course taxonomy analytics for student course records using **PostgreSQL**, **Groq LLM**, and **FastAPI**, with dual interfaces for web dashboards and the **WhatsApp Cloud API**.
 
-## Important data limitation
-The source has these fields only: `roll_number`, `name`, `vertical_name`, `course_name`, `date`, `start_time`, `end_time`, `venue_name`, `status`. It has no explicit `skill`, `department`, GPA, or placement outcome columns. Questions such as "full stack" and "backend with Java" can only be approximated by matching course/vertical names unless you add a verified skill taxonomy. Also, each row is an assessment attempt; repeated rows are not necessarily separate students or unique skills.
+---
 
-## 1. Install PostgreSQL and pgAdmin
-Install PostgreSQL for Windows (include Command Line Tools) and pgAdmin 4. Remember: pgAdmin's **master password** unlocks saved server passwords; it is not the PostgreSQL database user's password.
+## 1. Key Capabilities
 
-Open pgAdmin and connect to your local PostgreSQL server. Create database `skillsdb`.
+- **Semantic Skill Taxonomy**: Translates abstract skill categories (e.g. *Frontend*, *Backend*, *Programming Languages*, *Database*, *Full Stack*, *Cloud & DevOps*, *AI/ML*, *Data Science*, *Mobile*) into verified course completions in PostgreSQL rather than failing on exact name matches.
+- **Conversational Memory**: Retains multi-turn session context (e.g. asking *"How many students completed frontend courses?"* followed by *"Show their names"*, then *"What about CSE?"*).
+- **Guarded Read-Only Execution**: Strict transaction-level read-only enforcement, single-statement restrictions, statement timeouts, table allowlisting, and automated result row limits.
+- **Student vs. Attempt Awareness**: Correctly distinguishes assessment attempts ($225,576$ rows) from unique student completions ($1,451$ students) using `COUNT(DISTINCT roll_number)`.
+- **Automated AI Evaluation Framework (Evals)**: Continuous benchmarking suite with 52 test cases covering categories, rankings, conjunctions, follow-ups, and security injection attempts.
 
-## 2. Enable pgvector
-Install pgvector for your exact PostgreSQL version/Windows build. If the installer/package you use does not include it, follow the official pgvector installation instructions for your platform. Then in pgAdmin Query Tool, connected to `skillsdb`, run:
+---
 
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
+## 2. Architecture & File Structure
+
+```
+ps-bot/
+├── app.py                  # FastAPI service hosting Web UI, REST API, and WhatsApp webhook
+├── query_engine.py         # Semantic intent classification, SQL synthesis, and result synthesis
+├── course_taxonomy.py      # Structured mapping of skill categories & departments to database records
+├── session_memory.py       # Session-based conversational memory manager
+├── db.py                   # Read-only PostgreSQL connection manager with pooler retries
+├── sql_guard.py            # Security boundary protecting against injection and unapproved tables
+├── schema.sql              # Database schema definitions & indexes
+├── requirements.txt        # Python package dependencies
+├── test.py                 # Interactive CLI terminal test utility
+├── frontend/               # Web client interface
+│   ├── index.html          # Semantic query dashboard
+│   ├── app.js              # Interactive chat, rank tables, and Google Sheets/CSV export
+│   └── styles.css          # Modern dark/light UI styling
+└── evals/                  # AI Evaluation & Benchmark Suite
+    ├── test_dataset.json   # 52 verified test cases with exact student counts
+    ├── metrics.py          # Benchmark metrics calculator (accuracy, latencies, security)
+    ├── llm_judge.py        # Qualitative LLM-as-judge evaluator
+    ├── test_queries.py     # Unittest test suite
+    ├── run_evals.py        # Benchmark execution runner
+    └── README.md           # Evaluation documentation
 ```
 
-If PostgreSQL says it cannot open `vector.control`, pgvector is not installed into that PostgreSQL server installation yet. Do not continue to embeddings until fixed.
+---
 
-## 3. Create table and import the dump
-Open `schema.sql` in pgAdmin Query Tool and execute it. Then create a dedicated read-only login for the bot (change the password):
+## 3. Supported Skill Categories
 
-```sql
-CREATE ROLE skillbot_readonly LOGIN PASSWORD 'REPLACE_WITH_A_LONG_RANDOM_PASSWORD';
-GRANT CONNECT ON DATABASE skillsdb TO skillbot_readonly;
-GRANT USAGE ON SCHEMA public TO skillbot_readonly;
-GRANT SELECT ON ps_cleared_course_view, course_embeddings TO skillbot_readonly;
-```
+| Category | Canonical Key | Courses & Subjects Included |
+| :--- | :--- | :--- |
+| **Frontend Development** | `frontend` | HTML / CSS, Java Script, React, UI/UX (Levels 1–5), Web Technology (CSE Core), Modern Web Applications |
+| **Backend Development** | `backend` | Programming Python, Programming Java, Database Programming, DBMS Core Concepts, Data Structures, Linux, Computer Networks |
+| **Programming Languages** | `programming_languages` | C Programming, Programming C++, Programming Java, Programming Python, Java Script |
+| **Database Technologies** | `database` | Database Programming (Levels 1–7), DBMS Core Concepts (Levels 1–3) |
+| **Full Stack Development** | `full_stack` | Full Stack & DevOps, Vibe Coding, Modern Web Applications, Cross-stack completions |
+| **Cloud & DevOps** | `cloud_devops` | Linux, Version Control (Git & GitHub), Cloud & Cyber Security |
+| **AI & Machine Learning** | `ai_ml` | Machine Learning, Deep Learning, Maths for Machine Learning, AI Development |
+| **Data Science & Analytics** | `data_science` | Data Science, Bioinformatics & Data Analytics, Data Science Core Concepts |
+| **Mobile App Development** | `mobile_development` | Mobile App Development - Android (Java), Mobile Application Design |
 
-Use a separate admin connection for importing. In PowerShell, from this project directory:
+---
 
+## 4. Setup and Local Execution
+
+### 4.1 Prerequisites
+- Python 3.10+
+- PostgreSQL database (or Supabase connection string)
+
+### 4.2 Installation
 ```powershell
-py -m venv .venv
+# Create and activate virtual environment
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
+
+# Install dependencies
 pip install -r requirements.txt
-Copy-Item .env.example .env
 ```
 
-Edit `.env` with your PostgreSQL connection string and Groq/WhatsApp credentials. For importing, temporarily set `DATABASE_URL` to your **admin** PostgreSQL connection in `.env` (or use a separate admin env file). Run:
-
-```powershell
-python import_mysql_dump.py "C:\path\to\ps_cleared_data.sql"
+### 4.3 Configure `.env`
+Ensure `.env` contains:
+```env
+DATABASE_URL=postgresql://user:password@host:5432/postgres?sslmode=require
+GROQ_API_KEY=gsk_your_groq_api_key
+GROQ_MODEL=qwen/qwen3.8-27b
+WHATSAPP_VERIFY_TOKEN=your_whatsapp_verify_token
+WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token
+WHATSAPP_PHONE_NUMBER_ID=your_whatsapp_phone_number_id
+META_GRAPH_VERSION=v22.0
 ```
 
-The script truncates the target table before importing, so use it only on a new/dedicated target table. The dump is around 46 MB and contains multiple INSERT blocks; allow it a few minutes. Verify in pgAdmin:
-
-```sql
-SELECT COUNT(*) FROM ps_cleared_course_view;
-SELECT status, COUNT(*) FROM ps_cleared_course_view GROUP BY status;
-SELECT * FROM ps_cleared_course_view LIMIT 5;
-```
-
-After importing, change `.env` back to the `skillbot_readonly` connection string.
-
-## 4. Optional semantic index with pgvector
-The bot uses SQL for exact counts/rankings; embeddings are helpful for finding related course names, not for counting students. Run:
-
-```powershell
-python embed_index.py
-```
-
-The first run downloads `all-MiniLM-L6-v2` (internet required). This creates embeddings for distinct vertical/course names. To query nearest matches in pgAdmin:
-
-```sql
-SELECT vertical_name, course_name, 1 - (embedding <=> (
-  SELECT embedding FROM course_embeddings LIMIT 1
-)) AS similarity
-FROM course_embeddings
-ORDER BY embedding <=> (
-  SELECT embedding FROM course_embeddings LIMIT 1
-)
-LIMIT 10;
-```
-
-That is only a wiring test; replace the subquery with a parameterized embedding generated from the user's query for actual semantic retrieval. The initial bot uses Groq + guarded SQL and does not yet use vector similarity in its answer path.
-
-## 5. Get Groq API key
-Create an API key in the Groq console and put it in `.env` as `GROQ_API_KEY`. Do not commit `.env` or expose the key in browser/client code. You can change `GROQ_MODEL` to a model currently available to your Groq account.
-
-## 6. Configure WhatsApp Cloud API
-In Meta for Developers:
-1. Create an app and add the WhatsApp product.
-2. Use the test sender/recipient setup first; add and verify your own recipient number as directed in the dashboard.
-3. Copy the temporary/permanent access token and Phone Number ID into `.env`.
-4. Deploy this FastAPI service on a public HTTPS host (or use a temporary HTTPS tunnel for local testing).
-5. In WhatsApp Configuration, set the webhook callback URL to `https://YOUR_PUBLIC_HOST/webhook`, and the verify token to exactly `WHATSAPP_VERIFY_TOKEN` from `.env`.
-6. Subscribe the app to the `messages` webhook field.
-7. Send a message to the test WhatsApp number and check the app logs.
-
-WhatsApp Cloud API is not the same as automating WhatsApp Web. Meta may require business/app setup and message-template rules for business-initiated conversations. For replies inside the customer service window, free-form replies are generally allowed subject to current Meta policy.
-
-## 7. Run locally
+### 4.4 Start the Web Server
 ```powershell
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
-Open `http://127.0.0.1:8000/` to use the web dashboard. It sends questions to
-the same read-only query pipeline as WhatsApp. The health endpoint is
-`http://127.0.0.1:8000/health`. For webhook testing, expose port 8000 through
-an HTTPS tunnel and configure that URL in Meta.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) to access the SkillQuery web dashboard.
 
-## 8. Example questions
-- `How many distinct students have cleared Programming Java?`
-- `Top 10 students with the most cleared Java-related courses`
-- `Count students with cleared courses whose names mention Python`
-- `How many students have cleared Database Programming?`
-- `Show cleared vs not-cleared counts for Programming Java`
+### 4.5 Run Interactive CLI Test
+```powershell
+python test.py
+```
 
-Be careful with "full stack" and "backend": these terms do not appear as structured fields in the provided schema. For reliable rankings, maintain an approved mapping table from courses to skill categories (e.g., backend, frontend, full stack, Java) rather than trusting fuzzy model interpretation.
+### 4.6 Run AI Evaluation Benchmark (52 Test Cases)
+```powershell
+python evals\run_evals.py
+```
 
-## 9. pgAdmin password forgotten?
-There are two different passwords:
-- **pgAdmin master password**: unlocks pgAdmin's locally saved credentials. It does not reset the PostgreSQL login. Depending on your pgAdmin version, use its password-reset/credential-reset option or reset the local pgAdmin configuration; this can remove saved server connections/passwords.
-- **PostgreSQL server password** (often the `postgres` role): if another database superuser can log in, run `ALTER ROLE postgres WITH PASSWORD 'new-long-password';`. If no superuser can log in, use the official PostgreSQL Windows password-reset procedure for your installed version. It usually involves a temporary local authentication change in `pg_hba.conf`; back up the file, restrict any temporary trust rule to localhost, restart the correct PostgreSQL service, set the new password, restore the original authentication rule immediately, and restart again. Never leave `trust` enabled. Do not uninstall PostgreSQL or delete its data directory to reset a password.
+---
 
-## Security notes
-- Keep `.env` private; add it to `.gitignore`.
-- Use the read-only DB role in the running bot.
-- Review generated SQL before production; a read-only DB role is the strongest safeguard.
-- Add webhook signature verification, per-user access controls, rate limiting, audit logging, and privacy approval before using real student records.
+## 5. Security & Read-Only Governance
+
+1. **Transaction Read-Only**: Every connection explicitly executes `SET TRANSACTION READ ONLY`.
+2. **Statement Allowlisting**: Only `SELECT` or `WITH ... SELECT` queries are permitted. Multi-statement chaining (`...; DROP TABLE...`) is strictly rejected.
+3. **Table Isolation**: Access is restricted strictly to approved tables (`ps_cleared_course_view`, `ps_department_code_map`, `ps_course_domain_map`, `ps_student_course_summary`).
+4. **Row Bounds**: Safe automatic clamping of result row limits (maximum 100 rows).
+5. **No Credential Leakage**: Database URLs and credentials are automatically scrubbed from client errors and logs.
