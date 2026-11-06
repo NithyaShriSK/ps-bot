@@ -367,8 +367,8 @@ def build_category_sql(
                       {level_filter_c}
                 )
                 {dept_filter_s}
-                ORDER BY s.name ASC
-                LIMIT {min(limit, 100)}
+                ORDER BY s.roll_number ASC
+                LIMIT {min(limit, 2000)}
             """
             metric = f"Students who have NOT completed any course in {cat['display_name']}{level_str}"
         return validate_sql(sql), metric
@@ -401,8 +401,8 @@ def build_category_sql(
                   {dept_filter_main}
                 GROUP BY roll_number, name
                 HAVING COUNT(CASE WHEN status ILIKE 'Cleared' THEN 1 END) = 0
-                ORDER BY attempts_recorded DESC, name ASC
-                LIMIT {min(limit, 100)}
+                ORDER BY roll_number ASC
+                LIMIT {min(limit, 2000)}
             """
             metric = f"Students who attempted courses in {cat['display_name']}{level_str} but have not cleared any"
         return validate_sql(sql), metric
@@ -439,8 +439,8 @@ def build_category_sql(
                 GROUP BY roll_number, name
                 HAVING COUNT(DISTINCT course_name) >= 1
                    AND COUNT(DISTINCT course_name) < {total_courses}
-                ORDER BY completed_levels DESC, name ASC
-                LIMIT {min(limit, 100)}
+                ORDER BY roll_number ASC
+                LIMIT {min(limit, 2000)}
             """
             metric = f"Students who partially completed courses in {cat['display_name']}{level_str}"
         return validate_sql(sql), metric
@@ -466,8 +466,8 @@ def build_category_sql(
                   AND {condition}
                   {level_filter}
                   {dept_filter_main}
-                ORDER BY date DESC, name ASC
-                LIMIT {min(limit, 100)}
+                ORDER BY roll_number ASC
+                LIMIT {min(limit, 2000)}
             """
             metric = f"Pending assessments in {cat['display_name']}{level_str}"
         return validate_sql(sql), metric
@@ -496,7 +496,7 @@ def build_category_sql(
                   {level_filter}
                   {dept_filter_main}
                 GROUP BY roll_number, name
-                ORDER BY completed_levels DESC, name ASC
+                ORDER BY completed_levels DESC, roll_number ASC
                 LIMIT {min(limit, 100)}
             """
             metric = f"Ranked by number of distinct course levels completed in {cat['display_name']}{level_str}"
@@ -512,8 +512,8 @@ def build_category_sql(
                   {level_filter}
                   {dept_filter_main}
                 GROUP BY roll_number, name
-                ORDER BY completed_levels DESC, name ASC
-                LIMIT {min(limit, 100)}
+                ORDER BY roll_number ASC
+                LIMIT {min(limit, 2000)}
             """
             metric = f"Students with distinct completed course levels in {cat['display_name']}{level_str}"
         return validate_sql(sql), metric
@@ -586,8 +586,8 @@ def build_single_or_multi_course_sql(
                           {level_filter_c}
                     )
                     {dept_filter_s}
-                    ORDER BY s.name ASC
-                    LIMIT {min(limit, 100)}
+                    ORDER BY s.roll_number ASC
+                    LIMIT {min(limit, 2000)}
                 """
                 metric = f"Students who have not cleared {display_name}"
 
@@ -618,8 +618,8 @@ def build_single_or_multi_course_sql(
                       {dept_filter_main}
                     GROUP BY roll_number, name
                     HAVING COUNT(CASE WHEN status ILIKE 'Cleared' THEN 1 END) = 0
-                    ORDER BY attempts DESC, name ASC
-                    LIMIT {min(limit, 100)}
+                    ORDER BY roll_number ASC
+                    LIMIT {min(limit, 2000)}
                 """
                 metric = f"Students who attempted {display_name} but never cleared it"
 
@@ -643,8 +643,8 @@ def build_single_or_multi_course_sql(
                       AND {course_clause}
                       {level_filter}
                       {dept_filter_main}
-                    ORDER BY date DESC, name ASC
-                    LIMIT {min(limit, 100)}
+                    ORDER BY roll_number ASC
+                    LIMIT {min(limit, 2000)}
                 """
                 metric = f"Pending assessments for {display_name}"
 
@@ -671,7 +671,7 @@ def build_single_or_multi_course_sql(
                       {level_filter}
                       {dept_filter_main}
                     GROUP BY roll_number, name
-                    ORDER BY completed_levels DESC, name ASC
+                    ORDER BY completed_levels DESC, roll_number ASC
                     LIMIT {min(limit, 100)}
                 """
                 metric = f"Ranked by completed levels in {display_name}"
@@ -687,8 +687,8 @@ def build_single_or_multi_course_sql(
                       {level_filter}
                       {dept_filter_main}
                     GROUP BY roll_number, name
-                    ORDER BY completed_levels DESC, name ASC
-                    LIMIT {min(limit, 100)}
+                    ORDER BY roll_number ASC
+                    LIMIT {min(limit, 2000)}
                 """
                 metric = f"Students who cleared {display_name}"
         return validate_sql(sql), metric
@@ -725,8 +725,8 @@ def build_single_or_multi_course_sql(
               {dept_filter_main}
             GROUP BY roll_number, name
             HAVING {having_clauses}
-            ORDER BY total_levels_cleared DESC, name ASC
-            LIMIT {min(limit, 100)}
+            ORDER BY roll_number ASC
+            LIMIT {min(limit, 2000)}
         """
         metric = f"Students who cleared each of: {', '.join(targets)}"
     return validate_sql(sql), metric
@@ -746,7 +746,7 @@ def build_comparison_sql(
     def get_cond(t: str) -> str:
         if t in CANONICAL_COURSES:
             return CANONICAL_COURSES[t]["sql_condition"]
-        return f"(vertical_name ILIKE '%{t}%' OR course_name ILIKE '%{t}%')"
+        return f"(vertical_name ILIKE '%{t}%' OR {col_c} ILIKE '%{t}%')"
 
     t1_clause = get_cond(tech1)
     t2_clause = get_cond(tech2)
@@ -778,8 +778,8 @@ def build_comparison_sql(
               )
               {dept_filter}
             GROUP BY roll_number, name
-            ORDER BY name ASC
-            LIMIT {min(limit, 100)}
+            ORDER BY roll_number ASC
+            LIMIT {min(limit, 2000)}
         """
         metric = f"Students who cleared {tech1} but have NOT cleared {tech2}"
     return validate_sql(sql), metric
@@ -862,18 +862,40 @@ def synthesize_answer(
 
     # Table / Ranked list result
     count_val = len(rows)
+    total_val = meta.get("total_matching_students", count_val)
     category_name = meta.get("category_name") or "the requested criteria"
+    dept_name = meta.get("department_name")
+    scope = f" from **{dept_name}**" if dept_name else ""
     intent = meta.get("intent", "COMPLETED")
-    if intent == "NOT_COMPLETED":
-        line1 = f"Showing **{count_val} students** who have **not completed** **{category_name}**."
+    output_fmt = meta.get("output_format", "LIST")
+
+    if output_fmt == "RANK":
+        line1 = f"Showing **top {count_val} students** in **{category_name}**{scope}."
+    elif intent == "NOT_COMPLETED":
+        if total_val > 50:
+            line1 = f"Showing **1-50 of {total_val:,} students** who have **not completed** **{category_name}**{scope}."
+        else:
+            line1 = f"Showing **all {total_val:,} students** who have **not completed** **{category_name}**{scope}."
     elif intent == "ATTEMPTED_NOT_CLEARED":
-        line1 = f"Showing **{count_val} students** who **attempted but did not clear** **{category_name}**."
+        if total_val > 50:
+            line1 = f"Showing **1-50 of {total_val:,} students** who **attempted but did not clear** **{category_name}**{scope}."
+        else:
+            line1 = f"Showing **all {total_val:,} students** who **attempted but did not clear** **{category_name}**{scope}."
     elif intent == "PENDING":
-        line1 = f"Showing **{count_val} pending assessments** for **{category_name}**."
+        if total_val > 50:
+            line1 = f"Showing **1-50 of {total_val:,} pending assessments** for **{category_name}**{scope}."
+        else:
+            line1 = f"Showing **all {total_val:,} pending assessments** for **{category_name}**{scope}."
     elif intent == "PARTIAL":
-        line1 = f"Showing **{count_val} students** who **partially completed** **{category_name}**."
+        if total_val > 50:
+            line1 = f"Showing **1-50 of {total_val:,} students** who **partially completed** **{category_name}**{scope}."
+        else:
+            line1 = f"Showing **all {total_val:,} students** who **partially completed** **{category_name}**{scope}."
     else:
-        line1 = f"Showing **{count_val} students** matching **{category_name}**."
+        if total_val > 50:
+            line1 = f"Showing **1-50 of {total_val:,} matching students** for **{category_name}**{scope}."
+        else:
+            line1 = f"Showing **all {total_val:,} matching students** for **{category_name}**{scope}."
 
     metric = meta.get("metric") or "Based on verified assessment records."
     line2 = f"*{metric}*"
@@ -948,7 +970,7 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
     # Case B: Specific Course(s) Query (C, C Programming, Python, Java, SQL, DSA, HTML/CSS, React, etc.)
     # Specific courses take precedence over broad categories
     elif course_entities:
-        limit = 10 if output_format == "RANK" else 50
+        limit = 10 if output_format == "RANK" else 2000
         sql, metric = build_single_or_multi_course_sql(
             course_entities, completion_intent, output_format, dept_code, level=course_level, limit=limit
         )
@@ -983,7 +1005,7 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
     # Case C: Category Query (Frontend, Backend, Database Management, DSA, OS, etc.)
     elif cat_match:
         cat_key = cat_match["key"]
-        limit = 10 if output_format == "RANK" else 50
+        limit = 10 if output_format == "RANK" else 2000
         sql, metric = build_category_sql(
             cat_key, completion_intent, output_format, dept_code, level=course_level, limit=limit
         )
@@ -1026,7 +1048,14 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
 
     # Execute Guarded SQL
     meta["sql"] = sql
+    meta["output_format"] = output_format
     cols, raw_rows = fetch_rows(sql)
+
+    total_count = len(raw_rows)
+    meta["total_matching_students"] = total_count
+    meta["result_count"] = total_count
+    meta["page_size"] = 50
+    meta["total_pages"] = (total_count + 49) // 50 if total_count > 0 else 1
 
     dict_rows = [
         dict(zip(cols, [str(v) if v is not None else None for v in row]))
@@ -1048,7 +1077,6 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
     answer = synthesize_answer(clean_q, cols, raw_rows, meta)
     latency_ms = int((time.time() - t0) * 1000)
     meta["latency_ms"] = latency_ms
-    meta["result_count"] = len(raw_rows)
 
     session_manager.add_turn(session_id, clean_q, answer, sql)
     session_manager.update_context(session_id, {"last_sql": sql, "last_answer": answer})

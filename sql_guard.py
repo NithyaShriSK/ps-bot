@@ -67,10 +67,10 @@ def validate_sql(sql: str) -> str:
 
     # 6. Enforce safe LIMIT
     if not re.search(r"\blimit\s+\d+\b", query, re.IGNORECASE):
-        query += " LIMIT 50"
+        query += " LIMIT 2000"
     else:
         limit_match = re.search(r"\blimit\s+(\d+)\b", query, re.IGNORECASE)
-        if limit_match and int(limit_match.group(1)) > 100:
-            query = query[:limit_match.start(1)] + "100" + query[limit_match.end(1):]
+        if limit_match and int(limit_match.group(1)) > 5000:
+            query = query[:limit_match.start(1)] + "5000" + query[limit_match.end(1):]
 
     return query

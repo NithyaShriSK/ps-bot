@@ -92,12 +92,25 @@ function addMessage(role, text, options = [], tableData = null) {
 function createTable(columns, rows) {
   const wrapper = document.createElement("div");
   wrapper.className = "table-wrap";
+
+  const totalRows = rows.length;
+  const pageSize = 50;
+  const totalPages = Math.ceil(totalRows / pageSize) || 1;
+  let currentPage = 1;
+
+  // Top bar with count messaging
+  const topBar = document.createElement("div");
+  topBar.className = "table-meta-bar";
+  const metaLabel = document.createElement("span");
+  metaLabel.className = "table-count-label";
+  topBar.appendChild(metaLabel);
+
   const table = document.createElement("table");
   const head = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
   // Add Rank column if multiple rows
-  const addRank = rows.length > 1;
+  const addRank = totalRows > 1;
   if (addRank) {
     const rankHeader = document.createElement("th");
     rankHeader.textContent = "#";
@@ -119,51 +132,116 @@ function createTable(columns, rows) {
   });
   head.appendChild(headerRow);
   const body = document.createElement("tbody");
-  rows.forEach((row, idx) => {
-    const tableRow = document.createElement("tr");
-    if (addRank) {
-      const rankCell = document.createElement("td");
-      rankCell.textContent = String(idx + 1);
-      rankCell.style.fontWeight = "600";
-      rankCell.style.color = "var(--text-muted, #8e8ea0)";
-      tableRow.appendChild(rankCell);
+
+  // Pagination controls elements
+  const prevBtn = document.createElement("button");
+  prevBtn.type = "button";
+  prevBtn.className = "page-btn";
+  prevBtn.textContent = "◀ Previous";
+
+  const pageInfo = document.createElement("span");
+  pageInfo.className = "page-info";
+
+  const nextBtn = document.createElement("button");
+  nextBtn.type = "button";
+  nextBtn.className = "page-btn";
+  nextBtn.textContent = "Next ▶";
+
+  prevBtn.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage(currentPage);
     }
-    columns.forEach((column) => {
-      const cell = document.createElement("td");
-      const val = row[column] ?? "";
-      if ((column === "cleared_courses" || column === "attempted_courses") && val) {
-        const wrap = document.createElement("div");
-        wrap.className = "courses-cell";
-        const courses = String(val).split(", ");
-        wrap.innerHTML = courses
-          .map(c => `<span class="course-pill">${c}</span>`)
-          .join("");
-        cell.appendChild(wrap);
-      } else {
-        cell.textContent = val;
-      }
-      tableRow.appendChild(cell);
-    });
-    body.appendChild(tableRow);
   });
+
+  nextBtn.addEventListener("click", () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPage(currentPage);
+    }
+  });
+
+  function renderPage(page) {
+    body.innerHTML = "";
+    const startIdx = (page - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, totalRows);
+    const pageRows = rows.slice(startIdx, endIdx);
+
+    if (totalRows > pageSize) {
+      metaLabel.innerHTML = `Showing <strong>${startIdx + 1}–${endIdx}</strong> of <strong>${totalRows}</strong> matching students`;
+    } else {
+      metaLabel.innerHTML = `Showing all <strong>${totalRows}</strong> matching students`;
+    }
+
+    pageRows.forEach((row, idx) => {
+      const tableRow = document.createElement("tr");
+      if (addRank) {
+        const rankCell = document.createElement("td");
+        rankCell.textContent = String(startIdx + idx + 1);
+        rankCell.style.fontWeight = "600";
+        rankCell.style.color = "var(--text-muted, #8e8ea0)";
+        tableRow.appendChild(rankCell);
+      }
+      columns.forEach((column) => {
+        const cell = document.createElement("td");
+        const val = row[column] ?? "";
+        if ((column === "cleared_courses" || column === "attempted_courses") && val) {
+          const wrap = document.createElement("div");
+          wrap.className = "courses-cell";
+          const courses = String(val).split(", ");
+          wrap.innerHTML = courses
+            .map(c => `<span class="course-pill">${c}</span>`)
+            .join("");
+          cell.appendChild(wrap);
+        } else {
+          cell.textContent = val;
+        }
+        tableRow.appendChild(cell);
+      });
+      body.appendChild(tableRow);
+    });
+
+    pageInfo.textContent = `Page ${page} of ${totalPages}`;
+    prevBtn.disabled = page === 1;
+    nextBtn.disabled = page === totalPages;
+  }
+
+  // Initial render of page 1
+  renderPage(1);
   table.append(head, body);
+
   const actions = document.createElement("div");
   actions.className = "table-actions";
+
   const csvButton = document.createElement("button");
+  csvButton.type = "button";
   csvButton.className = "table-action";
-  csvButton.textContent = "↓ Download CSV";
+  csvButton.textContent = totalRows > 1 ? `↓ Download CSV (${totalRows} students)` : "↓ Download CSV";
   csvButton.addEventListener("click", () => downloadCsv(columns, rows));
+
   const sheetsButton = document.createElement("button");
+  sheetsButton.type = "button";
   sheetsButton.className = "table-action";
-  sheetsButton.textContent = "▣ Copy for Google Sheets";
+  sheetsButton.textContent = totalRows > 1 ? `▣ Copy for Google Sheets (${totalRows} students)` : "▣ Copy for Google Sheets";
   sheetsButton.addEventListener("click", async () => {
     const tsv = [columns.join("\t"), ...rows.map((row) => columns.map((column) => row[column] ?? "").join("\t"))].join("\n");
     await navigator.clipboard.writeText(tsv);
-    sheetsButton.textContent = "✓ Copied — paste into Google Sheets";
-    setTimeout(() => { sheetsButton.textContent = "▣ Copy for Google Sheets"; }, 2500);
+    sheetsButton.textContent = "✓ Copied all students — paste into Google Sheets";
+    setTimeout(() => { 
+      sheetsButton.textContent = totalRows > 1 ? `▣ Copy for Google Sheets (${totalRows} students)` : "▣ Copy for Google Sheets"; 
+    }, 2500);
   });
+
   actions.append(csvButton, sheetsButton);
-  wrapper.append(table, actions);
+
+  if (totalRows > pageSize) {
+    const paginator = document.createElement("div");
+    paginator.className = "table-pagination";
+    paginator.append(prevBtn, pageInfo, nextBtn);
+    actions.appendChild(paginator);
+  }
+
+  wrapper.append(topBar, table, actions);
   return wrapper;
 }
 
