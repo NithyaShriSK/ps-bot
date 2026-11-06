@@ -78,7 +78,7 @@ def detect_completion_intent(query: str) -> str:
 def detect_output_format(query: str) -> str:
     """Classifies the expected output structure (COUNT, LIST, RANK)."""
     q = query.lower().strip()
-    if re.search(r"\b(top\s+\d+|rank|leading|highest|best|most)\b", q):
+    if re.search(r"\b(top(\s+\d+)?|rank|leading|highest|best|most)\b", q):
         return "RANK"
     if re.search(r"\b(how\s+m[a-z]+|count|number\s+of|total\s+students)\b", q):
         return "COUNT"
@@ -92,6 +92,18 @@ def extract_course_level(query: str) -> Optional[str]:
     if m:
         return m.group(1).lower()
     return None
+
+def extract_rank_limit(query: str, default: int = 10, max_limit: int = 2000) -> int:
+    """Extracts explicit rank limit requested by user, e.g. 'top 50', 'top 5', 'first 20'."""
+    m = re.search(r"\b(?:top|first|rank|best|leading|limit)\s*(\d+)\b", query, re.IGNORECASE)
+    if m:
+        try:
+            val = int(m.group(1))
+            if val > 0:
+                return min(val, max_limit)
+        except ValueError:
+            pass
+    return default
 
 CANONICAL_COURSES: Dict[str, Dict[str, Any]] = {
     "C Programming": {
@@ -489,7 +501,8 @@ def build_category_sql(
                 SELECT roll_number, name,
                        substring(roll_number from '^[0-9]{{4}}[0-9]{{2}}[0-9]([A-Za-z]+)') AS dept_code,
                        COUNT(DISTINCT course_name) AS completed_levels,
-                       string_agg(DISTINCT course_name, ', ' ORDER BY course_name) AS cleared_courses
+                       string_agg(DISTINCT course_name, ', ' ORDER BY course_name) AS cleared_courses,
+                       COUNT(*) OVER() AS total_matching_count
                 FROM ps_cleared_course_view
                 WHERE status ILIKE 'Cleared'
                   AND {condition}
@@ -497,9 +510,12 @@ def build_category_sql(
                   {dept_filter_main}
                 GROUP BY roll_number, name
                 ORDER BY completed_levels DESC, roll_number ASC
-                LIMIT {min(limit, 100)}
+                LIMIT {min(limit, 2000)}
             """
-            metric = f"Ranked by number of distinct course levels completed in {cat['display_name']}{level_str}"
+            if level:
+                metric = f"Students who cleared {cat['display_name']}{level_str} (all qualifying students achieved the target level; ordered deterministically by roll number)"
+            else:
+                metric = f"Ranked by number of distinct course levels completed in {cat['display_name']}{level_str} (tie-broken deterministically by roll number)"
         else:
             sql = f"""
                 SELECT roll_number, name,
@@ -664,7 +680,8 @@ def build_single_or_multi_course_sql(
                     SELECT roll_number, name,
                            substring(roll_number from '^[0-9]{{4}}[0-9]{{2}}[0-9]([A-Za-z]+)') AS dept_code,
                            COUNT(DISTINCT course_name) AS completed_levels,
-                           string_agg(DISTINCT course_name, ', ' ORDER BY course_name) AS cleared_courses
+                           string_agg(DISTINCT course_name, ', ' ORDER BY course_name) AS cleared_courses,
+                           COUNT(*) OVER() AS total_matching_count
                     FROM ps_cleared_course_view
                     WHERE status ILIKE 'Cleared'
                       AND {course_clause}
@@ -672,9 +689,12 @@ def build_single_or_multi_course_sql(
                       {dept_filter_main}
                     GROUP BY roll_number, name
                     ORDER BY completed_levels DESC, roll_number ASC
-                    LIMIT {min(limit, 100)}
+                    LIMIT {min(limit, 2000)}
                 """
-                metric = f"Ranked by completed levels in {display_name}"
+                if level:
+                    metric = f"Students who cleared {display_name} (all qualifying students achieved the target level; ordered deterministically by roll number)"
+                else:
+                    metric = f"Ranked by number of distinct course levels completed in {display_name} (tie-broken deterministically by roll number)"
             else:
                 sql = f"""
                     SELECT roll_number, name,
@@ -870,7 +890,10 @@ def synthesize_answer(
     output_fmt = meta.get("output_format", "LIST")
 
     if output_fmt == "RANK":
-        line1 = f"Showing **top {count_val} students** in **{category_name}**{scope}."
+        if total_val > count_val:
+            line1 = f"Showing the **top {count_val} of {total_val:,} matching students** in **{category_name}**{scope}."
+        else:
+            line1 = f"Showing all **{count_val:,} matching students** in **{category_name}**{scope}. Only {count_val:,} students satisfy the selected conditions."
     elif intent == "NOT_COMPLETED":
         if total_val > 50:
             line1 = f"Showing **1-50 of {total_val:,} students** who have **not completed** **{category_name}**{scope}."
@@ -970,7 +993,7 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
     # Case B: Specific Course(s) Query (C, C Programming, Python, Java, SQL, DSA, HTML/CSS, React, etc.)
     # Specific courses take precedence over broad categories
     elif course_entities:
-        limit = 10 if output_format == "RANK" else 2000
+        limit = extract_rank_limit(clean_q, default=10) if output_format == "RANK" else 2000
         sql, metric = build_single_or_multi_course_sql(
             course_entities, completion_intent, output_format, dept_code, level=course_level, limit=limit
         )
@@ -1005,7 +1028,7 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
     # Case C: Category Query (Frontend, Backend, Database Management, DSA, OS, etc.)
     elif cat_match:
         cat_key = cat_match["key"]
-        limit = 10 if output_format == "RANK" else 2000
+        limit = extract_rank_limit(clean_q, default=10) if output_format == "RANK" else 2000
         sql, metric = build_category_sql(
             cat_key, completion_intent, output_format, dept_code, level=course_level, limit=limit
         )
@@ -1051,11 +1074,31 @@ def process_query(session_id: str, question: str) -> Dict[str, Any]:
     meta["output_format"] = output_format
     cols, raw_rows = fetch_rows(sql)
 
-    total_count = len(raw_rows)
+    # Check if a window total_matching_count was provided
+    total_matching_val = None
+    if "total_matching_count" in cols and raw_rows:
+        tmc_idx = cols.index("total_matching_count")
+        try:
+            total_matching_val = int(raw_rows[0][tmc_idx])
+        except (ValueError, TypeError):
+            total_matching_val = len(raw_rows)
+
+    # Strip total_matching_count from cols and raw_rows so it is not visible in table output
+    if "total_matching_count" in cols:
+        tmc_idx = cols.index("total_matching_count")
+        cols = [c for i, c in enumerate(cols) if i != tmc_idx]
+        raw_rows = [
+            tuple(v for i, v in enumerate(row) if i != tmc_idx)
+            for row in raw_rows
+        ]
+
+    displayed_count = len(raw_rows)
+    total_count = total_matching_val if total_matching_val is not None else displayed_count
     meta["total_matching_students"] = total_count
-    meta["result_count"] = total_count
+    meta["displayed_count"] = displayed_count
+    meta["result_count"] = displayed_count
     meta["page_size"] = 50
-    meta["total_pages"] = (total_count + 49) // 50 if total_count > 0 else 1
+    meta["total_pages"] = (displayed_count + 49) // 50 if displayed_count > 0 else 1
 
     dict_rows = [
         dict(zip(cols, [str(v) if v is not None else None for v in row]))

@@ -50,7 +50,7 @@ function addMessage(role, text, options = [], tableData = null) {
       && tableData.columns && tableData.columns.some(c => ["name", "roll_number", "student_count"].includes(c));
 
     if (hasStudentTable) {
-      body.appendChild(createTable(tableData.columns, tableData.rows));
+      body.appendChild(createTable(tableData.columns, tableData.rows, tableData.meta));
     }
 
     if (options.length) {
@@ -89,11 +89,13 @@ function addMessage(role, text, options = [], tableData = null) {
   message.scrollIntoView({behavior: "smooth", block: "nearest"});
 }
 
-function createTable(columns, rows) {
+function createTable(columns, rows, meta = {}) {
   const wrapper = document.createElement("div");
   wrapper.className = "table-wrap";
 
   const totalRows = rows.length;
+  const totalMatching = meta.total_matching_students || totalRows;
+  const isRank = meta.output_format === "RANK";
   const pageSize = 50;
   const totalPages = Math.ceil(totalRows / pageSize) || 1;
   let currentPage = 1;
@@ -167,10 +169,18 @@ function createTable(columns, rows) {
     const endIdx = Math.min(startIdx + pageSize, totalRows);
     const pageRows = rows.slice(startIdx, endIdx);
 
-    if (totalRows > pageSize) {
-      metaLabel.innerHTML = `Showing <strong>${startIdx + 1}–${endIdx}</strong> of <strong>${totalRows}</strong> matching students`;
+    if (isRank) {
+      if (totalMatching > totalRows) {
+        metaLabel.innerHTML = `Showing top <strong>${totalRows}</strong> of <strong>${totalMatching.toLocaleString()}</strong> matching students`;
+      } else {
+        metaLabel.innerHTML = `Showing all <strong>${totalRows}</strong> matching students. Only ${totalRows} students satisfy the selected conditions.`;
+      }
     } else {
-      metaLabel.innerHTML = `Showing all <strong>${totalRows}</strong> matching students`;
+      if (totalRows > pageSize) {
+        metaLabel.innerHTML = `Showing <strong>${startIdx + 1}–${endIdx}</strong> of <strong>${totalRows.toLocaleString()}</strong> matching students`;
+      } else {
+        metaLabel.innerHTML = `Showing all <strong>${totalRows.toLocaleString()}</strong> matching students`;
+      }
     }
 
     pageRows.forEach((row, idx) => {
