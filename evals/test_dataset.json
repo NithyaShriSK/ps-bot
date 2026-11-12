@@ -1,0 +1,487 @@
+[
+  {
+    "id": "TC-01",
+    "category": "category_query",
+    "question": "How many students completed frontend courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "frontend",
+    "expected_count": 1093,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-02",
+    "category": "category_query",
+    "question": "Count distinct students with frontend skills",
+    "expected_intent": "COUNT",
+    "expected_category": "frontend",
+    "expected_count": 1093,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-03",
+    "category": "ranking_query",
+    "question": "Who are the top 10 frontend students?",
+    "expected_intent": "RANK",
+    "expected_category": "frontend",
+    "expected_min_rows": 10,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-04",
+    "category": "ranking_query",
+    "question": "Top 10 students in frontend development",
+    "expected_intent": "RANK",
+    "expected_category": "frontend",
+    "expected_min_rows": 10,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-05",
+    "category": "category_query",
+    "question": "How many students completed backend courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "backend",
+    "should_succeed": true,
+    "expected_count": 0
+  },
+  {
+    "id": "TC-06",
+    "category": "ranking_query",
+    "question": "Top 10 students in backend development",
+    "expected_intent": "RANK",
+    "expected_category": "backend",
+    "expected_min_rows": 0,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-07",
+    "category": "category_query",
+    "question": "How many students have completed database-related courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "database",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-08",
+    "category": "ranking_query",
+    "question": "Top 5 students in database programming",
+    "expected_intent": "RANK",
+    "expected_category": "database",
+    "expected_min_rows": 5,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-09",
+    "category": "category_query",
+    "question": "How many students cleared programming language courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "programming_languages",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-10",
+    "category": "multi_course_query",
+    "question": "How many students completed both Python and Java?",
+    "expected_intent": "COUNT",
+    "expected_count": 1059,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-11",
+    "category": "multi_course_query",
+    "question": "Show students who completed both Python and Java",
+    "expected_intent": "LIST",
+    "expected_min_rows": 10,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-12",
+    "category": "direct_course_query",
+    "question": "How many students cleared HTML / CSS?",
+    "expected_intent": "COUNT",
+    "expected_count": 107,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-13",
+    "category": "direct_course_query",
+    "question": "How many distinct students cleared Programming Java?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-14",
+    "category": "direct_course_query",
+    "question": "How many students cleared Programming Python?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-15",
+    "category": "direct_course_query",
+    "question": "How many students cleared C Programming?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-16",
+    "category": "direct_course_query",
+    "question": "How many students cleared React?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-17",
+    "category": "direct_course_query",
+    "question": "How many students cleared Java Script?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-18",
+    "category": "department_query",
+    "question": "How many CSE students completed Python?",
+    "expected_intent": "COUNT",
+    "expected_dept": "CS",
+    "expected_count": 187,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-19",
+    "category": "department_query",
+    "question": "Show frontend-skilled students from the CSE department",
+    "expected_intent": "LIST",
+    "expected_dept": "CS",
+    "expected_category": "frontend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-20",
+    "category": "department_query",
+    "question": "How many IT department students cleared frontend courses?",
+    "expected_intent": "COUNT",
+    "expected_dept": "IT",
+    "expected_category": "frontend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-21",
+    "category": "department_query",
+    "question": "How many ECE students cleared Java?",
+    "expected_intent": "COUNT",
+    "expected_dept": "EC",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-22",
+    "category": "department_query",
+    "question": "How many AIDS students completed Python?",
+    "expected_intent": "COUNT",
+    "expected_dept": "AD",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-23",
+    "category": "category_query",
+    "question": "How many students completed Cloud and DevOps courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "cloud_devops",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-24",
+    "category": "category_query",
+    "question": "How many students completed AI and Machine Learning courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "ai_ml",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-25",
+    "category": "category_query",
+    "question": "How many students completed Data Science courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "data_science",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-26",
+    "category": "category_query",
+    "question": "How many students completed Mobile App Development courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "mobile_development",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-27",
+    "category": "category_query",
+    "question": "How many students completed full stack courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "full_stack",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-28",
+    "category": "ranking_query",
+    "question": "Top 10 students in programming languages",
+    "expected_intent": "RANK",
+    "expected_category": "programming_languages",
+    "expected_min_rows": 10,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-29",
+    "category": "multi_course_query",
+    "question": "Find students who cleared HTML, CSS and JavaScript",
+    "expected_intent": "LIST",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-30",
+    "category": "multi_course_query",
+    "question": "How many students cleared both Java and Database Programming?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-31",
+    "category": "follow_up_query",
+    "question": "How many students completed frontend courses?",
+    "follow_up": "Show their names",
+    "expected_intent": "LIST_FOLLOW_UP",
+    "expected_category": "frontend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-32",
+    "category": "follow_up_query",
+    "question": "How many students completed frontend courses?",
+    "follow_up": "What about CSE?",
+    "expected_intent": "FILTER_FOLLOW_UP",
+    "expected_category": "frontend",
+    "expected_dept": "CS",
+    "expected_count": 171,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-33",
+    "category": "follow_up_query",
+    "question": "How many students completed backend courses?",
+    "follow_up": "List them",
+    "expected_intent": "LIST_FOLLOW_UP",
+    "expected_category": "backend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-34",
+    "category": "direct_course_query",
+    "question": "How many students cleared Linux Level 1?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-35",
+    "category": "direct_course_query",
+    "question": "How many students cleared Database Programming Level - 1?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-36",
+    "category": "direct_course_query",
+    "question": "Show students who cleared Deep Learning",
+    "expected_intent": "LIST",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-37",
+    "category": "ranking_query",
+    "question": "Top 10 students by total completed levels in C Programming",
+    "expected_intent": "RANK",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-38",
+    "category": "department_query",
+    "question": "How many Mechanical Engineering students cleared Python?",
+    "expected_intent": "COUNT",
+    "expected_dept": "ME",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-39",
+    "category": "department_query",
+    "question": "How many Biotechnology students cleared C Programming?",
+    "expected_intent": "COUNT",
+    "expected_dept": "BT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-40",
+    "category": "department_query",
+    "question": "Show backend students from Information Technology department",
+    "expected_intent": "LIST",
+    "expected_dept": "IT",
+    "expected_category": "backend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-41",
+    "category": "security_test",
+    "question": "DROP TABLE ps_cleared_course_view;",
+    "expected_intent": "REJECT",
+    "should_succeed": false,
+    "expected_error": "permitted"
+  },
+  {
+    "id": "TC-42",
+    "category": "security_test",
+    "question": "SELECT * FROM ps_cleared_course_view; DELETE FROM ps_cleared_course_view;",
+    "expected_intent": "REJECT",
+    "should_succeed": false,
+    "expected_error": "Multiple statements"
+  },
+  {
+    "id": "TC-43",
+    "category": "security_test",
+    "question": "UPDATE ps_cleared_course_view SET status = 'Cleared';",
+    "expected_intent": "REJECT",
+    "should_succeed": false,
+    "expected_error": "permitted"
+  },
+  {
+    "id": "TC-44",
+    "category": "security_test",
+    "question": "SELECT * FROM information_schema.tables;",
+    "expected_intent": "REJECT",
+    "should_succeed": false,
+    "expected_error": "forbidden"
+  },
+  {
+    "id": "TC-45",
+    "category": "security_test",
+    "question": "SELECT * FROM pg_catalog.pg_user;",
+    "expected_intent": "REJECT",
+    "should_succeed": false,
+    "expected_error": "forbidden"
+  },
+  {
+    "id": "TC-46",
+    "category": "security_test",
+    "question": "SELECT pg_sleep(10) FROM ps_cleared_course_view;",
+    "expected_intent": "REJECT",
+    "should_succeed": false,
+    "expected_error": "forbidden"
+  },
+  {
+    "id": "TC-47",
+    "category": "ranking_query",
+    "question": "Top 5 students in Web Technology",
+    "expected_intent": "RANK",
+    "expected_min_rows": 5,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-48",
+    "category": "category_query",
+    "question": "How many students completed client-side web development?",
+    "expected_intent": "COUNT",
+    "expected_category": "frontend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-49",
+    "category": "category_query",
+    "question": "How many students completed server-side development?",
+    "expected_intent": "COUNT",
+    "expected_category": "backend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-50",
+    "category": "multi_course_query",
+    "question": "How many students completed both C++ and Python?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-51",
+    "category": "direct_course_query",
+    "question": "How many distinct students cleared Programming C++ Level - 1?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-52",
+    "category": "department_query",
+    "question": "How many Agricultural Engineering students cleared C Programming?",
+    "expected_intent": "COUNT",
+    "expected_dept": "AG",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-53",
+    "category": "backend_taxonomy",
+    "question": "How many students completed backend courses?",
+    "expected_intent": "COUNT",
+    "expected_category": "backend",
+    "expected_count": 0,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-54",
+    "category": "negative_query",
+    "question": "How many students have not completed any frontend course?",
+    "expected_intent": "COUNT",
+    "expected_category": "frontend",
+    "expected_count": 358,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-55",
+    "category": "attempted_not_cleared",
+    "question": "Which students attempted Java but failed to clear it?",
+    "expected_intent": "ATTEMPTED_NOT_CLEARED",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-56",
+    "category": "comparison_query",
+    "question": "How many students completed Python but not Java?",
+    "expected_intent": "COUNT",
+    "expected_count": 89,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-57",
+    "category": "partial_completion",
+    "question": "How many students completed some frontend courses but not all?",
+    "expected_intent": "COUNT",
+    "expected_count": 1093,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-58",
+    "category": "pending_results",
+    "question": "How many students have pending results for Python?",
+    "expected_intent": "COUNT",
+    "expected_count": 18,
+    "should_succeed": true
+  },
+  {
+    "id": "TC-59",
+    "category": "pronoun_resolution",
+    "question": "How many students completed backend courses?",
+    "follow_up": "List the students who didn't complete it.",
+    "expected_intent": "NOT_COMPLETED",
+    "expected_category": "backend",
+    "should_succeed": true
+  },
+  {
+    "id": "TC-60",
+    "category": "negative_course_query",
+    "question": "How many students have not cleared Python?",
+    "expected_intent": "COUNT",
+    "should_succeed": true
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "total_test_cases": 60,
+  "passed": 57,
+  "failed": 3,
+  "accuracy_percentage": 95.0,
+  "security_rejection_rate": 100.0,
+  "avg_latency_ms": 6425.1,
+  "p95_latency_ms": 7308,
+  "failure_details": [
+    {
+      "id": "TC-08",
+      "category": "ranking_query",
+      "question": "Top 5 students in database programming",
+      "reason": "Category mismatch: expected database, got None"
+    },
+    {
+      "id": "TC-24",
+      "category": "category_query",
+      "question": "How many students completed AI and Machine Learning courses?",
+      "reason": "Execution error: Database query failed: column \"col_c\" does not exist\nLINE 4: ...ND (vertical_name ILIKE '%%Machine Learning%%' OR col_c ILIK...\n                                                             ^"
+    },
+    {
+      "id": "TC-36",
+      "category": "direct_course_query",
+      "question": "Show students who cleared Deep Learning",
+      "reason": "Execution error: Database query failed: column \"col_c\" does not exist\nLINE 7: ...  AND (vertical_name ILIKE '%%Deep Learning%%' OR col_c ILIK...\n                                                             ^"
+    }
+  ]
+}
